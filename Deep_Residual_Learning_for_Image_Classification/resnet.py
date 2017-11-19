@@ -16,7 +16,7 @@ class BasicBlock(nn.Module):
         if self.downsample:
             self.stride = 2
             self.shortcut_block = nn.Sequential(
-                nn.Conv2d(self.in_planes, self.out_planes, kernel_size=1, stride=(2,2), bias=False),
+                nn.Conv2d(self.in_planes, self.out_planes, kernel_size=1, stride=self.stride, bias=False),
                 nn.BatchNorm2d(out_planes)
                 )
 
@@ -43,7 +43,8 @@ class Resnet(nn.Module):
     def __init__(self, block, num_blocks, num_classes=10):
         super().__init__()
         self.plane = 16
-        self.conv = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1)
+        self.conv = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1,bias=False)
+        self.bn = nn.BatchNorm2d(16)
         self.layer1= self._make_layers(block, 16, num_blocks[0], downsample=False)
         self.layer2= self._make_layers(block, 32, num_blocks[1], downsample=True)
         self.layer3= self._make_layers(block, 64, num_blocks[2], downsample=True)
@@ -59,6 +60,7 @@ class Resnet(nn.Module):
     
     def forward(self, x):
         x = self.conv(x)
+        x = self.bn(x)
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
