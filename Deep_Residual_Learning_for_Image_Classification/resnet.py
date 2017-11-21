@@ -29,12 +29,9 @@ class BasicBlock(nn.Module):
         )
         
     def forward(self,x):
-        shortcut = x
         out = self.block(x)
         if self.downsample:
-            shortcut = self.shortcut_block(shortcut)
-            out += shortcut
-            
+            out += self.shortcut_block(x)
         out =  F.relu(out)
         return out
     
@@ -42,13 +39,15 @@ class Resnet(nn.Module):
     
     def __init__(self, block, num_blocks, num_classes=10):
         super().__init__()
-        self.plane = 16
-        self.conv = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1,bias=False)
-        self.bn = nn.BatchNorm2d(16)
-        self.layer1= self._make_layers(block, 16, num_blocks[0], downsample=False)
-        self.layer2= self._make_layers(block, 32, num_blocks[1], downsample=True)
-        self.layer3= self._make_layers(block, 64, num_blocks[2], downsample=True)
-        self.linear= nn.Linear(64*block.expansion, num_classes)
+        self.plane = 64
+        self.conv = nn.Conv2d(3, self.plane, kernel_size=3, stride=1, padding=1,bias=False)
+        self.bn = nn.BatchNorm2d(self.plane)
+        self.layer1= self._make_layers(block, 64, num_blocks[0], downsample=False)
+        self.layer2= self._make_layers(block, 128, num_blocks[1], downsample=True)
+        self.layer3= self._make_layers(block, 256, num_blocks[2], downsample=True)
+        self.layer4= self._make_layers(block, 512, num_blocks[3], downsample=True)
+        
+        self.linear= nn.Linear(512*block.expansion, num_classes)
     
     def _make_layers(self, block,in_plane, num_block, downsample):
         layers = []
@@ -59,16 +58,17 @@ class Resnet(nn.Module):
         return nn.Sequential(*layers)
     
     def forward(self, x):
-        x = self.conv(x)
-        x = self.bn(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = F.avg_pool2d(x, kernel_size=8)
-        x=  x.view(x.size(0),-1)
-        return self.linear(x)
+        out = self.conv(x)
+        out = F.relu(self.bn(out))
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = F.avg_pool2d(out, kernel_size=4)
+        out = out.view(out.size(0),-1)
+        return self.linear(out)
 
     
-def Resnet20():
-    net = Resnet(BasicBlock, [3,3,3], 10)
+def Resnet18():
+    net = Resnet(BasicBlock, [2,2,2,2])
     return net
