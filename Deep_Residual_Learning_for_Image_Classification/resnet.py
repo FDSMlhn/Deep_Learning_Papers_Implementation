@@ -13,6 +13,7 @@ class BasicBlock(nn.Module):
         self.out_planes = out_planes
         self.downsample = downsample
         self.stride = 1
+        self.shortcut_block= nn.Sequential()
         if self.downsample:
             self.stride = 2
             self.shortcut_block = nn.Sequential(
@@ -30,11 +31,46 @@ class BasicBlock(nn.Module):
         
     def forward(self,x):
         out = self.block(x)
-        if self.downsample:
-            out += self.shortcut_block(x)
+        out += self.shortcut_block(x)
         out =  F.relu(out)
         return out
+
+class Bottleneck(nn.Module):
+    expansion = 4
     
+    def __init__(self, in_planes, out_planes, downsample = False):
+        super().__init__()
+        self.in_planes = in_planes
+        self.out_planes = out_planes
+        self.downsample = downsample
+        self.stride = 1
+        self.shortcut_block= nn.Sequential()
+        if self.downsample or self.in_planes != self.out_planes * expansion:
+            self.stride = 2
+            self.shortcut_block = nn.Sequential(
+                nn.Conv2d(self.in_planes, self.out_planes*expansion , kernel_size=1, stride=self.stride, bias=False),
+                nn.BatchNorm2d(self.out_planes*expansion)
+                )
+
+        self.block = nn.Sequential(
+            nn.Conv2d(self.in_planes, self.out_planes, kernel_size= 1, stride = self.stride, bias=False),
+            nn.BatchNorm2d(out_planes),
+            nn.ReLU(),
+            nn.Conv2d(self.out_planes, self.out_planes, kernel_size= 3, stride=1, padding = 1, bias=False),
+            nn.BatchNorm2d(out_planes),
+            nn.ReLU(),
+            nn.Conv2d(self.out_planes, self.out_planes * expansion, kernel_size= 1, stride = 1, bias=False),
+            nn.BatchNorm2d(out_planes * expansion),
+        )
+        
+    def forward(self,x):
+        out = self.block(x)
+        out += self.shortcut_block(x)
+        out =  F.relu(out)
+        return out    
+    
+    
+
 class Resnet(nn.Module):
     
     def __init__(self, block, num_blocks, num_classes=10):
@@ -71,4 +107,8 @@ class Resnet(nn.Module):
     
 def Resnet18():
     net = Resnet(BasicBlock, [2,2,2,2])
+    return net
+
+def Resnet50()
+    net = Resnet(Bottleneck, [3,4,6,3])
     return net
