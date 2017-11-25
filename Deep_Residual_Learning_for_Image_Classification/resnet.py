@@ -43,24 +43,23 @@ class Bottleneck(nn.Module):
         self.in_planes = in_planes
         self.out_planes = out_planes
         self.downsample = downsample
-        self.stride = 1
+        self.stride = 1 if not downsample else 2
         self.shortcut_block= nn.Sequential()
-        if self.downsample or self.in_planes != self.out_planes * expansion:
-            self.stride = 2
+        if self.downsample or self.in_planes != self.out_planes * self.expansion:
             self.shortcut_block = nn.Sequential(
-                nn.Conv2d(self.in_planes, self.out_planes*expansion , kernel_size=1, stride=self.stride, bias=False),
-                nn.BatchNorm2d(self.out_planes*expansion)
+                nn.Conv2d(self.in_planes, self.out_planes*self.expansion , kernel_size=1, stride=self.stride, bias=False),
+                nn.BatchNorm2d(self.out_planes*self.expansion)
                 )
 
         self.block = nn.Sequential(
-            nn.Conv2d(self.in_planes, self.out_planes, kernel_size= 1, stride = self.stride, bias=False),
+            nn.Conv2d(self.in_planes, self.out_planes, kernel_size= 1, bias=False),
             nn.BatchNorm2d(out_planes),
             nn.ReLU(),
-            nn.Conv2d(self.out_planes, self.out_planes, kernel_size= 3, stride=1, padding = 1, bias=False),
+            nn.Conv2d(self.out_planes, self.out_planes, kernel_size= 3, stride=self.stride, padding = 1, bias=False),
             nn.BatchNorm2d(out_planes),
             nn.ReLU(),
-            nn.Conv2d(self.out_planes, self.out_planes * expansion, kernel_size= 1, stride = 1, bias=False),
-            nn.BatchNorm2d(out_planes * expansion),
+            nn.Conv2d(self.out_planes, self.out_planes * self.expansion, kernel_size= 1, bias=False),
+            nn.BatchNorm2d(out_planes * self.expansion),
         )
         
     def forward(self,x):
@@ -109,6 +108,6 @@ def Resnet18():
     net = Resnet(BasicBlock, [2,2,2,2])
     return net
 
-def Resnet50()
+def Resnet50():
     net = Resnet(Bottleneck, [3,4,6,3])
     return net
